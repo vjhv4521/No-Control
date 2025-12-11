@@ -333,7 +333,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   moveSpeed: 5
-  isMeleeAttack: 1
+  isMeleeAttack: 0
 --- !u!95 &1329251409
 Animator:
   serializedVersion: 5
