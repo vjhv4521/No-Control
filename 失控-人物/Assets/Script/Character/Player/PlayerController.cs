@@ -1,124 +1,141 @@
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.InputSystem; 
+using UnityEngine.InputSystem;
 
 public class PlayerController : MonoBehaviour
 {
-    private InputActions inputActions; 
-    
-    [Header("Settings")]
-    public float moveSpeed = 5f;
+    // --- 变量定义区域 ---
 
+    [Header("基础设置 (Inspector中调整)")]
+    public float moveSpeed = 5f;          // 移动速度
+    public float attackDuration = 0.5f;   // 攻击动作持续时间（硬直时间）
+
+    [Header("状态监测 (只读)")]
+    public bool isDead;                   // 核心状态：是否死亡
+
+    // --- 组件引用 ---
+    private InputActions inputActions;    // 新版输入系统的实例
     private Rigidbody2D rb;
     private Animator animator;
-    private Vector2 moveInput; 
 
-    // 状态标记
-    // ❗ 重点：请在 Inspector 中确保这个变量没有被勾选
-    [SerializeField] public bool isMeleeAttack; 
+    // --- 内部变量 ---
+    private Vector2 moveInput;            // 存储玩家当前的输入方向
+    private bool isMeleeAttack;           // 防止攻击连点（攻击冷却锁）
 
+    // 1. 初始化组件
     private void Awake()
     {
         inputActions = new InputActions();
         rb = GetComponent<Rigidbody2D>();
         animator = GetComponent<Animator>();
-
-        // 【新增日志 A】：检查 isMeleeAttack 的初始状态
-        Debug.Log("【初始化检查】isMeleeAttack 初始值为: " + isMeleeAttack); 
     }
 
+    // 2. 激活输入系统 (事件订阅)
     private void OnEnable()
     {
         inputActions.Gameplay.Enable();
+        // 当按下攻击键时，调用 OnMeleeAttack 函数
         inputActions.Gameplay.MeleeAttack.started += OnMeleeAttack;
     }
 
+    // 3. 禁用输入系统 (取消订阅，防止内存泄漏)
     private void OnDisable()
     {
         inputActions.Gameplay.MeleeAttack.started -= OnMeleeAttack;
         inputActions.Gameplay.Disable();
     }
 
+    // 4. 每帧逻辑：处理输入读取 和 动画更新
     private void Update()
     {
+        // 【逻辑锁】如果你死了，就完全切断输入读取，也不再更新跑动动画
+        if (isDead) return;
+
+        // 实时读取手柄/键盘的 Vector2 输入
         moveInput = inputActions.Gameplay.Move.ReadValue<Vector2>();
-        UpdateAnimation();
-    }
-
-    private void FixedUpdate()
-    {
-        Move();
-    }
-
-    private void Move()
-    {
-        if (moveInput.x < -0.01f)
-            transform.localScale = new Vector3(-1, 1, 1);
-        else if (moveInput.x > 0.01f)
-            transform.localScale = new Vector3(1, 1, 1);
-
-        rb.velocity = moveInput * moveSpeed;
-    }
-
-    private void UpdateAnimation()
-    {
+        
+        // 更新动画参数
         animator.SetFloat("Horizontal", moveInput.x);
         animator.SetFloat("Vertical", moveInput.y);
-        animator.SetFloat("Speed", moveInput.sqrMagnitude);
-        
+        animator.SetFloat("Speed", moveInput.sqrMagnitude); // 用向量长度判断是否在动
         animator.SetBool("isMeleeAttack", isMeleeAttack);
     }
 
-    // 攻击回调方法（核心调试区域）
-    private void OnMeleeAttack(InputAction.CallbackContext context)
+    // 5. 物理帧逻辑：处理刚体移动
+    private void FixedUpdate()
     {
-        // 【新增日志 B】：确认输入事件被触发
-        Debug.Log("【输入检测】攻击按键被按下。"); 
-
-        if (!isMeleeAttack)
+        // 【物理锁】如果你死了，必须强制停止物理运动
+        if (isDead)
         {
-            // 【新增日志 C】：确认状态锁被解除
-            Debug.Log("【状态解锁】isMeleeAttack 为 False，指令可以发送。"); 
-            
-            // 确保 animator 存在，避免空引用错误
-            if (animator != null)
-            {
-                animator.SetTrigger("MeleeAttack");
-                // 【新增日志 D】：确认 SetTrigger 被执行
-                Debug.Log("【指令发送】成功发送 SetTrigger(\"MeleeAttack\")。"); 
-            }
-            else
-            {
-                Debug.LogError("Animator 组件丢失，无法触发动画！");
-                return; // 如果组件丢失，直接返回，避免后续错误
-            }
+            rb.velocity = Vector2.zero; // 防止尸体因惯性继续滑行
+            return;
+        }
 
-            isMeleeAttack = true;
-            
-            // 协程重置状态
-            StartCoroutine(ResetAttackState(0.5f)); 
-            // 【新增日志 E】：确认协程启动指令已发送
-            Debug.Log("【协程启动】ResetAttackState 已发送启动指令。"); 
-        }
-        else
-        {
-            // 【新增日志 F】：检查是否被状态锁阻止
-            Debug.LogWarning("【状态锁定】攻击指令被忽略，isMeleeAttack 状态为 True。");
-        }
+        Move();
     }
 
-    // 协程重置状态（核心调试区域）
-    IEnumerator ResetAttackState(float time)
+    // 具体移动逻辑
+    private void Move()
     {
-        // 【新增日志 G】：确认协程开始运行
-        Debug.Log("【协程运行】协程开始执行。等待 " + time + " 秒...");
+        // 处理角色翻转 (Left/Right)
+        // 如果向左走 (x < 0)
+        if (moveInput.x < -0.01f)
+        {
+            transform.localScale = new Vector3(-1, 1, 1);
+        }
+        // 如果向右走 (x > 0)
+        else if (moveInput.x > 0.01f)
+        {
+            transform.localScale = new Vector3(1, 1, 1);
+        }
+
+        // 应用速度给刚体
+        rb.velocity = moveInput * moveSpeed;
+    }
+
+    // 6. 攻击事件回调
+    private void OnMeleeAttack(InputAction.CallbackContext context)
+    {
+        // 【攻击锁】死人不能打，正在攻击中也不能打（防止无限连击）
+        if (isDead || isMeleeAttack) return;
+
+        isMeleeAttack = true; // 上锁
+        animator.SetTrigger("MeleeAttack"); // 播放动画
         
-        yield return new WaitForSeconds(time);
+        // 开启协程，倒计时结束后解锁
+        StartCoroutine(ResetAttackState());
+    }
+
+    // --- 外部接口 (供敌人/陷阱/UI调用) ---
+
+    // 玩家受伤
+    public void PlayerHurt()
+    {
+        // 死人不需要再播受伤动画
+        if (isDead) return;
+        animator.SetTrigger("hurt");
+    }
+
+    // 玩家死亡
+    public void PlayerDie()
+    {
+        // 防止多次调用导致逻辑重复执行
+        if (isDead) return;
+
+        isDead = true; // 改变逻辑状态
+        animator.SetBool("isDead", true); // 同步动画状态
         
-        isMeleeAttack = false;
-        
-        // 【新增日志 H】：确认协程运行结束，状态重置
-        Debug.Log("【协程重置】isMeleeAttack 已重置为 False。");
+        Debug.Log("【系统】玩家判定死亡");
+        // 可以在此处添加弹出“游戏结束UI”的逻辑
+    }
+
+    // --- 协程工具 ---
+    
+    // 攻击硬直计时器
+    IEnumerator ResetAttackState()
+    {
+        // 等待攻击动作播放完毕
+        yield return new WaitForSeconds(attackDuration);
+        isMeleeAttack = false; // 解锁，允许下一次攻击
     }
 }
