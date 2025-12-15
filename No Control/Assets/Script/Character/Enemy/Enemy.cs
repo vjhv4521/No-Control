@@ -12,6 +12,31 @@ namespace Game.Character
             if (status == null || !status.Alive || Player.Instance == null) return;
             MoveToPlayer();
 
+            Collider2D[] hitPlayers = Physics2D.OverlapCircleAll(transform.position, 0.15f);
+            foreach (Collider2D playerCollider in hitPlayers)
+            {
+                if (playerCollider.CompareTag("Player"))
+                {
+                    Player player = playerCollider.GetComponent<Player>();
+                    if (player != null && player.status != null && player.status.Alive)
+                    {
+                        player.status.Hit(10);
+                        Debug.Log($"{player.gameObject.name} 被敌人近身攻击，受到10点伤害！");
+
+                        // 触发混乱系统和受伤动画
+                        if (PlayerController.Instance != null)
+                        {
+                            PlayerController.Instance.OnPlayerHurt(); // 激活混乱系统
+                            PlayerController.Instance.PlayerHurt();   // 播放受伤动画
+                        }
+
+                        // 销毁自身
+                        Destroy(gameObject);
+                        return; // 立即返回，避免重复处理
+                    }
+                }
+            }
+
             transform.eulerAngles = new Vector3(transform.eulerAngles.x, transform.eulerAngles.y, 0f);
         }
 
