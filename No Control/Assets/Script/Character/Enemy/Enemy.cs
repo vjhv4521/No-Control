@@ -11,6 +11,8 @@ namespace Game.Character
         {
             if (status == null || !status.Alive || Player.Instance == null) return;
             MoveToPlayer();
+
+            transform.eulerAngles = new Vector3(transform.eulerAngles.x, transform.eulerAngles.y, 0f);
         }
 
         private void MoveToPlayer()
