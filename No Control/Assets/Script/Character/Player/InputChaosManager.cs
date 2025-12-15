@@ -2,26 +2,42 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
+[System.Serializable]
+public class KeyMapping // 可序列化的键位映射
+{
+    public string actionName;
+    public Key key;
+}
+
 public class InputChaosManager : MonoBehaviour
 {
     [Header("混乱设置")]
     public bool chaosOnStart = true;
     public bool chaosOnHurt = true;
 
-    [Header("键位映射字典")]
-    public Dictionary<string, Key> actionKeyMap = new Dictionary<string, Key>();
+    [Header("键位映射（可在Inspector编辑）")]
+    public List<KeyMapping> keyMappings = new List<KeyMapping>();
+    private Dictionary<string, Key> actionKeyMap = new Dictionary<string, Key>();
 
     private void Awake()
     {
-        // 初始化默认按键
-        actionKeyMap["MoveUp"] = Key.W;
-        actionKeyMap["MoveDown"] = Key.S;
-        actionKeyMap["MoveLeft"] = Key.A;
-        actionKeyMap["MoveRight"] = Key.D;
-        actionKeyMap["Attack"] = Key.Space;
+        // 初始化默认键位
+        if (keyMappings.Count == 0)
+        {
+            keyMappings.Add(new KeyMapping { actionName = "MoveUp", key = Key.W });
+            keyMappings.Add(new KeyMapping { actionName = "MoveDown", key = Key.S });
+            keyMappings.Add(new KeyMapping { actionName = "MoveLeft", key = Key.A });
+            keyMappings.Add(new KeyMapping { actionName = "MoveRight", key = Key.D });
+            keyMappings.Add(new KeyMapping { actionName = "Attack", key = Key.Space });
+        }
 
-        if (chaosOnStart)
-            ShuffleKeys();
+        // 转换为字典
+        foreach (var mapping in keyMappings)
+        {
+            actionKeyMap[mapping.actionName] = mapping.key;
+        }
+
+        if (chaosOnStart) ShuffleKeys();
     }
 
     public Key GetKeyForAction(string action)
@@ -34,7 +50,6 @@ public class InputChaosManager : MonoBehaviour
     {
         if (!chaosOnHurt || actionKeyMap.Count < 2) return;
 
-        // 随机交换两个键
         List<string> keys = new List<string>(actionKeyMap.Keys);
         int a = Random.Range(0, keys.Count);
         int b;
@@ -47,6 +62,8 @@ public class InputChaosManager : MonoBehaviour
         actionKeyMap[actionA] = actionKeyMap[actionB];
         actionKeyMap[actionB] = temp;
 
+        // 同步回可序列化列表（供Inspector查看）
+        UpdateKeyMappings();
         Debug.Log($"[Chaos] 键位交换：{actionA} ({actionKeyMap[actionA]}) ⇄ {actionB} ({actionKeyMap[actionB]})");
     }
 
@@ -60,7 +77,19 @@ public class InputChaosManager : MonoBehaviour
             Key temp = actionKeyMap[a];
             actionKeyMap[a] = actionKeyMap[b];
             actionKeyMap[b] = temp;
-            Debug.Log($"[Chaos] 初始洗牌：{a} ⇄ {b}");
+        }
+        UpdateKeyMappings();
+        Debug.Log("[Chaos] 初始键位洗牌完成");
+    }
+
+    private void UpdateKeyMappings()
+    {
+        foreach (var mapping in keyMappings)
+        {
+            if (actionKeyMap.ContainsKey(mapping.actionName))
+            {
+                mapping.key = actionKeyMap[mapping.actionName];
+            }
         }
     }
 }
