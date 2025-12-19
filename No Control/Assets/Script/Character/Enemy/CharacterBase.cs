@@ -5,10 +5,9 @@ namespace Game.Character
     public abstract class CharacterBase : MonoBehaviour
     {
         public Status status { get; protected set; }
-        [SerializeField] public int MaxHp; // 与Status的MaxHp映射
+        [SerializeField] public int MaxHp; 
         protected Material material;
 
-        // 初始化：空值校验 + 状态系统初始化
         public virtual void Init()
         {
             var spriteRenderer = GetComponent<SpriteRenderer>();
@@ -18,38 +17,40 @@ namespace Game.Character
                 return;
             }
             material = spriteRenderer.material;
-            status = new Status(this); // 基类统一初始化Status
+            status = new Status(this); 
         }
 
-        // 死亡逻辑：适配Status的DeadCheck自动标记
         public virtual void SetDead()
         {
+            // 如果是玩家，只标记死亡，不销毁物体
+            if (gameObject.CompareTag("Player"))
+            {
+                Debug.Log("玩家进入死亡状态，等待复活...");
+                return;
+            }
+
+            // 普通敌人延迟销毁
             if (status == null || !status.Alive) return;
-            Destroy(gameObject, 1f); // 延迟销毁保证特效/音效执行
+            Destroy(gameObject, 1f); 
         }
 
-        // 受击特效：空值保护
-       // 受击特效：移除DoTween，改为简单的颜色闪烁（无插件版）
         public void HitEffect()
         {
             if (material == null) return;
-            // 替代方案：直接设置材质透明度（或颜色），无需渐变
-            material.SetFloat("_Blend", 1f); // 显示受击效果
-            Invoke(nameof(ResetHitEffect), 0.2f); // 延迟恢复
+            material.SetFloat("_Blend", 1f);
+            Invoke(nameof(ResetHitEffect), 0.2f);
         }
 
-        // 恢复材质默认状态
         private void ResetHitEffect()
         {
             if (material == null) return;
             material.SetFloat("_Blend", 0f);
         }
 
-        // 补充Player调用的TakeDamage方法（核心逻辑不变）
         public virtual void TakeDamage(float damage)
         {
             if (status == null || !status.Alive) return;
-            status.Hit(Mathf.RoundToInt(damage)); // 映射到Status的Hit方法
+            status.Hit(Mathf.RoundToInt(damage));
         }
     }
 }
