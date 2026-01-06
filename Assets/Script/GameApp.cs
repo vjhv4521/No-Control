@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class GameApp : MonoBehaviour
 {
@@ -40,5 +41,16 @@ public class GameApp : MonoBehaviour
         }
         _instance = this;
         DontDestroyOnLoad(gameObject);
+        EnsureMinimap();
+    }
+
+    void EnsureMinimap()
+    {
+        var existing = FindObjectOfType<MinimapController>();
+        if (existing != null) return;
+        var root = new GameObject("MinimapRoot");
+        root.transform.SetParent(transform, false);
+        root.AddComponent<MinimapController>();
+        DontDestroyOnLoad(root);
     }
 }
