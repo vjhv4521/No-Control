@@ -13,7 +13,6 @@ GameObject:
   - component: {fileID: 5438526977965719070}
   - component: {fileID: 6901984310312744570}
   - component: {fileID: 8270788103049694013}
-  - component: {fileID: 4374310015358711567}
   m_Layer: 0
   m_Name: Enemy
   m_TagString: Enemy
@@ -172,30 +171,29 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 757ec1da19638884097f6f895666df34, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  players: {fileID: 0}
+  currentState: 0
+  stateChangeInterval: 0.5
   moveSpeed: 2
+  patrolSpeed: 2
+  chaseSpeed: 4
+  patrolPoints: []
   attackDamage: 1
   attackCooldown: 1
   detectionRange: 10
---- !u!195 &4374310015358711567
-NavMeshAgent:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1307419092930535589}
-  m_Enabled: 1
-  m_AgentTypeID: 0
-  m_Radius: 2
-  m_Speed: 3.5
-  m_Acceleration: 8
-  avoidancePriority: 99
-  m_AngularSpeed: 120
-  m_StoppingDistance: 0
-  m_AutoTraverseOffMeshLink: 1
-  m_AutoBraking: 1
-  m_AutoRepath: 1
-  m_Height: 3
-  m_BaseOffset: 2
-  m_WalkableMask: 4294967295
-  m_ObstacleAvoidanceType: 4
+  attackRange: 0.001
+  nodeSize: 0.5
+  maxSearchNodes: 200
+  stopThreshold: 0.1
+  stopTime: 0.5
+  wallCheckDistance: 2
+  obstacleAvoidDistance: 1.5
+  useDiagonalMovement: 1
+  cornerSmoothingFactor: 0.2
+  smoothPath: 1
+  smoothIterations: 3
+  pathUpdateInterval: 0.3
+  "\u89C6\u91CEAngle": 360
+  dynamicPathUpdateDistance: 1
+  verticalAvoidDistance: 1
+  horizontalAvoidDistance: 1
+  maxAvoidAttemptsPerDirection: 3
